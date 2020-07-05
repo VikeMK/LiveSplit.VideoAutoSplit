@@ -55,7 +55,6 @@ namespace LiveSplit.VAS.UI
         {
             txtDebug.Clear();
             _TextWriter.Flush();
-            Log.Flush();
         }
 
         private void btnExport_Click(object sender, EventArgs e)

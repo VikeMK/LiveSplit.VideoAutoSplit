@@ -69,7 +69,7 @@ namespace LiveSplit.VAS.VASL
             if (Settings.ContainsKey(name))
                 return GetSettingValueRecursive(Settings[name]);
 
-            Log.Info("[VASL] Custom Setting Key doesn't exist: " + name);
+            Log.Logger.Information("Custom Setting Key doesn't exist: " + name);
 
             return false;
         }

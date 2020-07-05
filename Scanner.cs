@@ -75,7 +75,7 @@ namespace LiveSplit.VAS
                     }
                     catch (Exception e)
                     {
-                        Log.Error(e, "Couldn't obtain video Geometry.");
+                        Log.Logger.Error(e, "Couldn't obtain video Geometry.");
                     }
                 }
                 return _VideoGeometry;
@@ -229,18 +229,18 @@ namespace LiveSplit.VAS
 
         public void Stop()
         {
-            Log.Info("Stopping scanner...");
+            Log.Logger.Information("Stopping scanner...");
             try
             {
                 if (_FrameHandlerThread != null)
                 {
-                    Log.Verbose("Stopping Frame Handler thread...");
+                    Log.Logger.Verbose("Stopping Frame Handler thread...");
                     _FrameHandlerThread.Abort();
-                    Log.Verbose("Frame Handler thread stopped.");
+                    Log.Logger.Verbose("Frame Handler thread stopped.");
                 }
                 else
                 {
-                    Log.Verbose("Frame Handler thread never existed, ignoring.");
+                    Log.Logger.Verbose("Frame Handler thread never existed, ignoring.");
                 }
 
                 if (_VideoSource != null)
@@ -251,24 +251,25 @@ namespace LiveSplit.VAS
                 }
                 else
                 {
-                    Log.Verbose("Video source was never set, ignoring.");
+                    Log.Logger.Verbose("Video source was never set, ignoring.");
                 }
 
-                Log.Verbose("Resetting scanner variables...");
+                Log.Logger.Verbose("Resetting scanner variables...");
                 CurrentIndex = 0;
                 OverloadCount = 0;
+                ScanningCount = 0;
                 MinFPS = double.MaxValue;
                 MaxFPS = double.Epsilon;
                 DeltaManager = null;
                 _VideoGeometry = Geometry.Blank;
                 _TrueCropGeometry = Geometry.Blank;
-                Log.Verbose("Scanner variables reset.");
+                Log.Logger.Verbose("Scanner variables reset.");
 
-                Log.Info("Scanner stopped.");
+                Log.Logger.Information("Scanner stopped.");
             }
             catch (Exception e)
             {
-                Log.Error(e, "Scanner failed to stop. This isn't good...");
+                Log.Logger.Error(e, "Scanner failed to stop. This isn't good...");
             }
         }
 
@@ -276,22 +277,22 @@ namespace LiveSplit.VAS
         {
             if (_FrameHandlerThread == null || _FrameHandlerThread.ThreadState != ThreadState.Running)
             {
-                Log.Info("Creating scanner thread.");
+                Log.Logger.Information("Creating scanner thread.");
                 ThreadStart t = new ThreadStart(Start);
                 _FrameHandlerThread = new Thread(t);
                 _FrameHandlerThread.Start();
-                Log.Info("Thread created.");
+                Log.Logger.Information("Thread created.");
             }
             else
             {
                 if (!Restarting)
                 {
-                    Log.Info("Scanner already running.");
+                    Log.Logger.Information("Scanner already running.");
                     Restart();
                 }
                 else
                 {
-                    Log.Warning("'Kay, this does not look good here, um...");
+                    Log.Logger.Warning("'Kay, this does not look good here, um...");
                 }
             }
         }
@@ -301,21 +302,21 @@ namespace LiveSplit.VAS
         {
             try
             {
-                Log.Verbose("Initializing start.");
+                Log.Logger.Verbose("Initializing start.");
                 UpdateCropGeometry();
-                Log.Info("Trying to start scanner.");
+                Log.Logger.Information("Trying to start scanner.");
                 if (_GameProfile != null && IsVideoSourceValid() && CompiledFeatures != null)
                 {
-                    Log.Info("Starting scanner...");
+                    Log.Logger.Information("Starting scanner...");
                     CurrentIndex = 0;
                     OverloadCount = 0;
                     DeltaManager = new DeltaManager(CompiledFeatures, 256); // Todo: Unhardcode?
                     InitCount = 0;
 
-                    Log.Verbose("Hooking events onto Accord.");
+                    Log.Logger.Verbose("Hooking events onto Accord.");
                     _VideoSource.NewFrame += _NewFrameEventHandler;
                     _VideoSource.VideoSourceError += _VideoSourceErrorEventHandler;
-                    Log.Info("Scanner hooked onto video source.");
+                    Log.Logger.Information("Scanner hooked onto video source.");
 
                     var moniker = DeviceMoniker;
                     if (!string.IsNullOrWhiteSpace(moniker))
@@ -324,16 +325,16 @@ namespace LiveSplit.VAS
                         {
                             _VideoSource.Source = moniker;
                             _VideoSource.Start();
-                            Log.Info("Scanner started.");
+                            Log.Logger.Information("Scanner started.");
                         }
                         catch (Exception e)
                         {
-                            Log.Error(e, "Video source failed to start.");
+                            Log.Logger.Error(e, "Video source failed to start.");
                         }
                     }
                     else
                     {
-                        Log.Warning("How did you manage to change the selected device in a few milliseconds?");
+                        Log.Logger.Warning("How did you manage to change the selected device in a few milliseconds?");
                     }
                 }
                 else
@@ -344,12 +345,12 @@ namespace LiveSplit.VAS
                     if (!IsVideoSourceValid()) str += " The script was not loaded.";
                     if (CompiledFeatures == null) str += " CompiledFeatures was blank.";
 
-                    Log.Verbose(str);
+                    Log.Logger.Verbose(str);
                 }
             }
             catch (Exception e)
             {
-                Log.Error(e, "Unknown Scanner.Start() error, please show this to the component developers.");
+                Log.Logger.Error(e, "Unknown Scanner.Start() error, please show this to the component developers.");
             }
         }
 
@@ -358,17 +359,17 @@ namespace LiveSplit.VAS
             if (!Restarting)
             {
                 Restarting = true;
-                Log.Info("Restarting scanner...");
+                Log.Logger.Information("Restarting scanner...");
                 Stop();
-                Log.Verbose("Stopped, sleeping for 1000ms.");
+                Log.Logger.Verbose("Stopped, sleeping for 1000ms.");
                 Thread.Sleep(1000);
                 AsyncStart();
-                Log.Info("Restart finished.");
+                Log.Logger.Information("Restart finished.");
                 Restarting = false;
             }
             else
             {
-                Log.Verbose("THERE CAN BE ONLY ONE THREAD.");
+                Log.Logger.Verbose("THERE CAN BE ONLY ONE THREAD.");
             }
         }
 
@@ -377,15 +378,15 @@ namespace LiveSplit.VAS
             _TrueCropGeometry = Geometry.Blank;
             if (_Component.IsScriptLoaded() && _GameProfile != null)
             {
-                Log.Info("Adjusting profile to set dimensions...");
+                Log.Logger.Information("Adjusting profile to set dimensions...");
                 IsScannerLocked = true;
                 CompiledFeatures = new CompiledFeatures(_GameProfile, CropGeometry);
                 IsScannerLocked = false;
-                Log.Info("Profile adjusted.");
+                Log.Logger.Information("Profile adjusted.");
             }
             else
             {
-                Log.Verbose("Game Profile is not set or script is not loaded. UpdateCropGeometry() failed.");
+                Log.Logger.Verbose("Game Profile is not set or script is not loaded. UpdateCropGeometry() failed.");
             }
         }
 
@@ -408,7 +409,7 @@ namespace LiveSplit.VAS
 
         private void HandleVideoError(object sender, VideoSourceErrorEventArgs e)
         {
-            Log.Error(e.Exception, "Video capture fatal error. " + e.Description);
+            Log.Logger.Error(e.Exception, "Video capture fatal error. " + e.Description);
 
             if (IsVideoSourceRunning())
             {
@@ -442,12 +443,12 @@ namespace LiveSplit.VAS
                 OverloadCount++;
                 if (OverloadCount > 50)
                 {
-                    Log.Warning("Frame handler is too overloaded, restarting scanner...");
+                    Log.Logger.Warning("Frame handler is too overloaded, restarting scanner...");
                     Restart();
                 }
                 else
                 {
-                    Log.Warning("Frame handler is overloaded!!!");
+                    Log.Logger.Warning("Frame handler is overloaded!!!");
                 }
             }
         }
@@ -470,7 +471,7 @@ namespace LiveSplit.VAS
             catch (Exception e)
             {
                 scan.Dispose();
-                Log.Error(e, "Error scanning frame.");
+                Log.Logger.Error(e, "Error scanning frame.");
                 if (IsVideoSourceRunning() && !IsScannerLocked)
                 {
                     ScanningCount--;
@@ -498,13 +499,13 @@ namespace LiveSplit.VAS
 
                 if (index >= 32 && AverageFPS > 64 && !Restarting)
                 {
-                    Log.Warning("Framerate is abnormally high, usually an indicator the video feed is not active.");
+                    Log.Logger.Warning("Framerate is abnormally high, usually an indicator the video feed is not active.");
                     Restart();
                 }
             }
             catch (Exception e)
             {
-                Log.Error(e, "Unknown Scanner Error.");
+                Log.Logger.Error(e, "Unknown Scanner Error.");
             }
         }
 

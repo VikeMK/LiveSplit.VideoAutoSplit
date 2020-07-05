@@ -56,8 +56,8 @@ namespace LiveSplit.VAS.UI
                 }
                 catch (Exception e2)
                 {
-                    Log.Error(e1, "Could not load VASL Settings.");
-                    Log.Error(e2, "");
+                    Log.Logger.Error(e1, "Could not load VASL Settings.");
+                    Log.Logger.Error(e2, "");
                 }
             }
         }
@@ -224,7 +224,10 @@ namespace LiveSplit.VAS.UI
 
             if (double.IsNaN(numValue))
             {
-                textBlock.Value = value.ToString();
+                if (value != null)
+                {
+                    textBlock.Value = value.ToString();
+                }
             }
             else
             {

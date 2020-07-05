@@ -68,8 +68,8 @@ namespace LiveSplit.VAS.UI
                 }
                 catch (Exception e2)
                 {
-                    Log.Error(e1, "Could not load VASL Settings.");
-                    Log.Error(e2, "");
+                    Log.Logger.Error(e1, "Could not load VASL Settings.");
+                    Log.Logger.Error(e2, "");
                 }
             }
         }

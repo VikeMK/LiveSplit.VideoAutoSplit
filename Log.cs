@@ -1,113 +1,68 @@
-﻿using System;
-using System.Diagnostics;
+﻿using Serilog;
+using Serilog.Core;
+using Serilog.Events;
+using Serilog.Formatting;
+using Serilog.Formatting.Display;
+using System;
 using System.IO;
 
 namespace LiveSplit.VAS
 {
     public static class Log
     {
-        private const string PREFIX = "[VAS] ";
-        private const string STANDARD_FORMAT = "{0} {1}";
+        private const string LogMessageTemplate = "[{Timestamp:HH:mm:ss} {Level:u3}] [VAS] {Message:lj}{NewLine}{Exception}";
 
-        private static TextWriter _TextWriter = new StringWriter();
-
-        public static bool VerboseEnabled { get; set; } = true;
-
-        public static bool WriteToFileEnabled { get; set; } = true;
+        public static Logger Logger;
 
         public static event EventHandler<string> LogUpdated;
 
+        private static readonly StringWriter LogHistory = new StringWriter();
+
         static Log()
         {
-            try
-            {
-                if (!EventLog.SourceExists("VideoAutoSplit"))
-                    EventLog.CreateEventSource("VideoAutoSplit", "Application");
-            }
-            catch { }
+            var logFormatter = new MessageTemplateTextFormatter(LogMessageTemplate);
+            var loggerConfiguration =
+                new LoggerConfiguration()
+                    .MinimumLevel.Verbose()
+                    .WriteTo.File(logFormatter, @"VASErrorLog.txt")
+                    .WriteTo.Trace(logFormatter)
+                    .WriteTo.TextWriter(LogHistory)
+                    .WriteTo.Sink(new DebugSink(logFormatter));
 
             try
             {
-                var listener = new EventLogTraceListener("VideoAutoSplit");
-                listener.Filter = new EventTypeFilter(SourceLevels.Warning);
-                Trace.Listeners.Add(listener);
+                loggerConfiguration = loggerConfiguration.WriteTo.EventLog(logFormatter, "VideoAutoSplit", "Application", manageEventSource: true);
             }
-            catch { }
+            catch (Exception)
+            {
+                // Catch exception when event log could not be registered.
+                // This will usually occur when not running as administrator.
+            }
+
+            Logger = loggerConfiguration.CreateLogger();
         }
 
-        public static string ReadAll() => _TextWriter.ToString();
+        public static string ReadAll() => LogHistory.ToString();
 
-        private static void Write(string message)
+        private class DebugSink : ILogEventSink
         {
-            try
+            private readonly ITextFormatter _textFormatter;
+
+            public DebugSink(ITextFormatter textFormatter)
             {
-                var str = "[" + DateTime.Now.ToString("hh:mm:ss.fff") + "] " + message;
-                _TextWriter.WriteLine(str);
-                LogUpdated?.Invoke(null, str);
-                if (WriteToFileEnabled) WriteToFile(str);
+                _textFormatter = textFormatter ?? throw new ArgumentNullException(nameof(textFormatter));
             }
-            catch { }
-        }
 
-        private static void WriteToFile(string message)
-        {
-            try
+            public void Emit(LogEvent logEvent)
             {
-                using (var fs = new FileStream(@"VASErrorLog.txt", FileMode.Append, FileAccess.Write))
-                using (var sw = new StreamWriter(fs))
-                {
-                    sw.WriteLineAsync(message);
-                }
-            }
-            catch { }
-        }
+                if (logEvent == null) throw new ArgumentNullException(nameof(logEvent));
 
-        public static void Verbose(string message)
-        {
-            if (VerboseEnabled) Info(message);
-        }
+                var logWriter = new StringWriter();
+                _textFormatter.Format(logEvent, logWriter);
+                var log = logWriter.ToString();
 
-        public static void Info(string message)
-        {
-            try
-            {
-                Trace.TraceInformation(STANDARD_FORMAT, PREFIX, message);
-                Write(message);
+                LogUpdated?.Invoke(this, log);
             }
-            catch { }
-        }
-
-        public static void Warning(string message)
-        {
-            try
-            {
-                Trace.TraceWarning(STANDARD_FORMAT, PREFIX, message);
-                Write(message);
-            }
-            catch { }
-        }
-
-        public static void Error(Exception ex, string description)
-        {
-            try
-            {
-                Trace.TraceError(STANDARD_FORMAT, PREFIX, description);
-                Write(description);
-                Trace.TraceError("{0}\n\n{1}", ex.Message, ex.StackTrace);
-                Write(ex.Message);
-                Write(ex.StackTrace);
-            }
-            catch { }
-        }
-
-        public static void Flush()
-        {
-            try
-            {
-                _TextWriter.Flush();
-                _TextWriter = new StringWriter();
-            }
-            catch { }
         }
     }
 }

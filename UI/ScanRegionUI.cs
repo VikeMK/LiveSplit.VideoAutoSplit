@@ -404,7 +404,7 @@ namespace LiveSplit.VAS.UI
             }
             catch (Exception e)
             {
-                Log.Error(e, "Thumbnail failed to render for the Scan Region.");
+                Log.Logger.Error(e, "Thumbnail failed to render for the Scan Region.");
                 scan.Dispose();
                 _RenderingFrame = false;
             }

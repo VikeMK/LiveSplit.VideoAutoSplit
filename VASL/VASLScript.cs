@@ -242,9 +242,7 @@ namespace LiveSplit.VAS.VASL
 
         private void Debug(string output, params object[] args)
         {
-            Log.Info(String.Format("[VASL/{1}] {0}",
-                String.Format(output, args),
-                this.GetHashCode()));
+            Log.Logger.Debug($"[VASL/{this.GetHashCode()}] {string.Format(output, args)}");
         }
 
         public static MethodList ParseScript(string code)

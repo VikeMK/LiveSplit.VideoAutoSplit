@@ -46,7 +46,7 @@ namespace LiveSplit.VAS
                     }
                     catch (Exception e)
                     {
-                        Log.Error(e, "Profile path failed to set.");
+                        Log.Logger.Error(e, "Profile path failed to set.");
                         _ProfilePath = string.Empty;
                         ProfileCleanup();
                     }
@@ -65,7 +65,7 @@ namespace LiveSplit.VAS
                     {
                         if (!string.IsNullOrWhiteSpace(_ProfilePath))
                         {
-                            Log.Info("Loading new game profile: " + ProfilePath);
+                            Log.Logger.Information("Loading new game profile: " + ProfilePath);
 
                             _GameProfile = GameProfile.FromPath(ProfilePath);
                             // Todo: Unset GameVersion if the existing one isn't in the new profile. Maybe.
@@ -83,7 +83,7 @@ namespace LiveSplit.VAS
 
                             FSWatcher.EnableRaisingEvents = true;
 
-                            Log.Info("Game profile successfully loaded!");
+                            Log.Logger.Information("Game profile successfully loaded!");
 
                             // Fixes a recursion problem that decided to show up.
                             _Script = new VASLScript(_GameProfile.RawScript, GameVersion);
@@ -95,7 +95,7 @@ namespace LiveSplit.VAS
                     }
                     catch (Exception e)
                     {
-                        Log.Error(e, "Error loading Game profile:");
+                        Log.Logger.Error(e, "Error loading Game profile:");
                         ProfileCleanup();
                     }
                 }
@@ -113,14 +113,14 @@ namespace LiveSplit.VAS
                     try
                     {
                         var gp = GameProfile; // Invoke getter
-                        Log.Info("Loading VASL script within profile...");
+                        Log.Logger.Information("Loading VASL script within profile...");
                         _Script = new VASLScript(gp.RawScript, GameVersion);
-                        Log.Info("VASL script successfully loaded!");
+                        Log.Logger.Information("VASL script successfully loaded!");
                         TryStartScanner();
                     }
                     catch (Exception e)
                     {
-                        Log.Error(e, "Error loading VASL script:");
+                        Log.Logger.Error(e, "Error loading VASL script:");
                         ProfileCleanup();
                     }
                 }
@@ -182,7 +182,7 @@ namespace LiveSplit.VAS
 
         public VASComponent(LiveSplitState state)
         {
-            Log.Info("Establishing Video Auto Splitter, standby...");
+            Log.Logger.Information("Establishing Video Auto Splitter, standby...");
 
             State = state;
 
@@ -418,7 +418,7 @@ namespace LiveSplit.VAS
             }
             catch (Exception e)
             {
-                Log.Error(e, "VASL Script failed to process frame.");
+                Log.Logger.Error(e, "VASL Script failed to process frame.");
             }
         }
 
@@ -433,14 +433,14 @@ namespace LiveSplit.VAS
             }
             catch (Exception e)
             {
-                Log.Error(e, "Scanner failed to initialize");
+                Log.Logger.Error(e, "Scanner failed to initialize");
                 ProfileCleanup();
             }
         }
 
         private void ProfileCleanup()
         {
-            Log.Info("Cleaning up profile...");
+            Log.Logger.Information("Cleaning up profile...");
             try
             {
                 //FSWatcher.EnableRaisingEvents = false;
@@ -451,7 +451,7 @@ namespace LiveSplit.VAS
             }
             catch (Exception e)
             {
-                Log.Error(e, "Unable to run shutdown on script, skipping.");
+                Log.Logger.Error(e, "Unable to run shutdown on script, skipping.");
             }
             finally
             {
@@ -460,19 +460,18 @@ namespace LiveSplit.VAS
                 _Script = null;
                 ResetVASLSettings();
             }
-            Log.Info("Profile cleanup finished.");
+            Log.Logger.Information("Profile cleanup finished.");
         }
 
         public override void Dispose()
         {
-            Log.Info("Disposing...");
+            Log.Logger.Information("Disposing...");
             _ProfilePath = null;
             ProfileCleanup();
             Scanner.Dispose();
             FSWatcher?.Dispose();
             ComponentUI.Dispose();
-            Log.Info("Closing...");
-            Log.Flush();
+            Log.Logger.Information("Closing...");
         }
 
         public override void Update(IInvalidator i, LiveSplitState s, float w, float h, LayoutMode m) { }
